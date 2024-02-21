@@ -1,0 +1,58 @@
+---
+
+- hosts: raspbian:ubuntu 
+  gather_facts: true
+
+  tasks:
+
+  - name: "Update Systems"
+    become: true
+    ansible.builtin.apt:
+      upgrade: 'yes'
+      autoremove: 'yes'
+      update_cache: 'yes'
+      cache_valid_time: '86400'
+    register: raspbian_update
+    when:
+      - ansible_distribution == 'Debian' or
+        ansible_distribution == 'Ubuntu'
+
+  - name: "Show installed updates"
+    debug:
+      msg: "{{ raspbian_update.stdout_lines }}"
+    when:
+      - ansible_distribution == 'Debian' or
+        ansible_distribution == 'Ubuntu'
+
+  - name: "Check if Reboot is required"
+    become: true
+    ansible.builtin.stat:
+      path: '/var/run/reboot-required'
+      get_md5: 'no'
+    register: raspbian_reboot
+    when:
+      - ansible_distribution == 'Debian' or
+        ansible_distribution == 'Ubuntu'
+
+  - name: "Reboot system if needed"
+    become: true
+    ansible.builtin.reboot:
+    register: rebooted
+    when:
+      - "raspbian_reboot.stat.exists == True"
+
+  - name: "Check that cifs is mounted"
+    become: true
+    ansible.builtin.stat:
+      path: '/mnt/smb/.mount_check'
+    register: stat_result
+    when:
+      - '"mail" in inventory_hostname'
+
+  - name: "Mount cifs"
+    become: true
+    ansible.builtin.command: 'mount -a'
+    when:
+      - '"mail" in inventory_hostname'
+      - not stat_result.stat.exists
+...
