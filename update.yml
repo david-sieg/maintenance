@@ -2,7 +2,6 @@
 
 - hosts: raspbian:ubuntu 
   gather_facts: true
-
   tasks:
 
   - name: "Update Systems"
@@ -55,4 +54,5 @@
     when:
       - '"mail" in inventory_hostname'
       - not stat_result.stat.exists
+
 ...
